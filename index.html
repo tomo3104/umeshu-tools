@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>果実酒計算ツール｜梅酒・あんず酒・レモン酒のアルコール度数と材料を計算</title>
+  <meta name="description" content="果実酒のアルコール度数・材料の量・必要な瓶のサイズを自動計算。梅酒・あんず酒・レモン酒・いちご酒など8種類に対応。自家製果実酒作りに。">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background: #fffaf4;
+      color: #3d1a08;
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ヘッダー */
+    header {
+      background: linear-gradient(135deg, #e8a838 0%, #c17f24 100%);
+      padding: 28px 16px 20px;
+      text-align: center;
+    }
+
+    .header-emoji { font-size: 2.5rem; margin-bottom: 8px; }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #fff;
+      letter-spacing: 0.05em;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.85);
+      margin-top: 6px;
+    }
+
+    /* 広告枠 */
+    .ad-slot {
+      background: #f5ede0;
+      border: 1px dashed #d4a96a;
+      text-align: center;
+      padding: 12px;
+      margin: 12px 16px;
+      color: #b08040;
+      font-size: 0.8rem;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ad-slot-rectangle { min-height: 250px; }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 16px 40px;
+    }
+
+    /* 果物セレクター */
+    .fruit-section {
+      padding: 20px 0 8px;
+    }
+
+    .fruit-section-title {
+      font-size: 0.78rem;
+      color: #a07850;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .fruit-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .fruit-card {
+      background: #fff;
+      border: 2px solid #e8d0b0;
+      border-radius: 12px;
+      padding: 12px 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .fruit-card:active { transform: scale(0.95); }
+
+    .fruit-card.selected {
+      background: #fef3dc;
+      border-color: #c17f24;
+      box-shadow: 0 2px 8px rgba(193,127,36,0.25);
+    }
+
+    .fruit-emoji { font-size: 1.8rem; display: block; }
+
+    .fruit-name {
+      font-size: 0.7rem;
+      color: #a07850;
+      margin-top: 4px;
+    }
+
+    .fruit-card.selected .fruit-name {
+      color: #c17f24;
+      font-weight: bold;
+    }
+
+    /* 計算エリア */
+    .calc-area {
+      background: #f9f4ed;
+      color: #333;
+      border-radius: 16px;
+      padding: 20px 16px;
+      margin-top: 16px;
+    }
+
+    .selected-fruit-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e0d0b8;
+    }
+
+    .selected-fruit-emoji { font-size: 2rem; }
+
+    .selected-fruit-info h2 {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: #5c2d10;
+    }
+
+    .selected-fruit-info p {
+      font-size: 0.75rem;
+      color: #a07850;
+    }
+
+    /* タブ（計算エリア内） */
+    .calc-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .calc-tab {
+      flex: 1;
+      padding: 8px 4px;
+      text-align: center;
+      font-size: 0.75rem;
+      cursor: pointer;
+      border-radius: 8px;
+      background: #f0e6d3;
+      color: #a07850;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .calc-tab.active {
+      background: #5c2d10;
+      color: #e8c87a;
+      font-weight: bold;
+    }
+
+    .calc-panel { display: none; }
+    .calc-panel.active { display: block; }
+
+    /* フォーム */
+    .form-group { margin-bottom: 14px; }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #5c2d10;
+    }
+
+    .label-sub {
+      font-weight: normal;
+      color: #a07850;
+      font-size: 0.75rem;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #d4b896;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      color: #333;
+      -webkit-appearance: none;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #c17f24;
+    }
+
+    .unit {
+      white-space: nowrap;
+      color: #a07850;
+      font-size: 0.88rem;
+      min-width: 32px;
+    }
+
+    .sec-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #c17f24;
+      padding: 4px 0 8px;
+      border-bottom: 1px solid #e0d0b8;
+      margin-bottom: 12px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #e0d0b8;
+      margin: 14px 0;
+    }
+
+    /* ヒントボックス */
+    .hint-box {
+      background: #fef9f0;
+      border: 1px solid #e8d0a0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      font-size: 0.78rem;
+      color: #7a5020;
+    }
+
+    /* 計算ボタン */
+    .calc-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #c17f24, #e8a838);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 4px;
+      letter-spacing: 0.05em;
+      box-shadow: 0 3px 8px rgba(193,127,36,0.3);
+      transition: opacity 0.2s;
+    }
+
+    .calc-btn:active { opacity: 0.85; }
+
+    /* 結果 */
+    .result-box {
+      display: none;
+      background: linear-gradient(135deg, #5c2d10, #3d1a08);
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: 16px;
+      color: #f0e6d3;
+    }
+
+    .result-box.show { display: block; }
+
+    .result-title {
+      font-size: 0.78rem;
+      color: #e8c87a;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .result-big {
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .result-num {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #e8c87a;
+    }
+
+    .result-unit-big {
+      font-size: 1rem;
+      color: #c0946a;
+    }
+
+    .result-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .result-card {
+      background: rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .rc-label { font-size: 0.72rem; color: #c0946a; margin-bottom: 4px; }
+    .rc-value { font-size: 1.4rem; font-weight: bold; color: #e8c87a; }
+    .rc-unit  { font-size: 0.72rem; color: #c0946a; }
+
+    .sweetness-wrap { margin-top: 14px; }
+    .sw-label { font-size: 0.75rem; color: #c0946a; margin-bottom: 6px; }
+
+    .sw-bar-bg {
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      height: 10px;
+      overflow: hidden;
+    }
+
+    .sw-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(to right, #c17f24, #e8c87a);
+      transition: width 0.6s;
+    }
+
+    .sw-text {
+      font-size: 0.82rem;
+      color: #e8c87a;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    .result-note {
+      font-size: 0.72rem;
+      color: #a07850;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    .result-tip {
+      background: rgba(232,200,122,0.12);
+      border-left: 3px solid #e8c87a;
+      border-radius: 0 6px 6px 0;
+      padding: 8px 12px;
+      margin-top: 10px;
+      font-size: 0.78rem;
+      color: #e8c87a;
+    }
+
+    /* 果物情報カード */
+    .fruit-info-card {
+      display: none;
+      background: #fff8ee;
+      color: #333;
+      border: 1px solid #e8d0b0;
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+
+    .fruit-info-card.show { display: block; }
+
+    .fruit-info-title {
+      font-size: 0.82rem;
+      font-weight: bold;
+      color: #5c2d10;
+      margin-bottom: 8px;
+    }
+
+    .fruit-info-body {
+      font-size: 0.78rem;
+      color: #666;
+      line-height: 1.7;
+    }
+
+    /* 選択前メッセージ */
+    .select-prompt {
+      text-align: center;
+      padding: 32px 16px;
+      color: #a07850;
+    }
+
+    .select-prompt-emoji { font-size: 2.5rem; margin-bottom: 12px; }
+    .select-prompt p { font-size: 0.9rem; }
+
+    /* 法律注意 */
+    .law-note {
+      background: #fff8ee;
+      border: 1px solid #e8d0b0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-top: 12px;
+      font-size: 0.75rem;
+      color: #7a5020;
+      line-height: 1.7;
+    }
+
+    .law-note strong { color: #c17f24; }
+
+    footer {
+      background: #5c2d10;
+      color: #e8c87a;
+      text-align: center;
+      padding: 24px;
+      font-size: 0.75rem;
+      margin-top: 32px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-emoji">🍶</div>
+  <h1>果実酒計算ツール</h1>
+  <p>アルコール度数・材料の量・瓶のサイズを自動計算</p>
+</header>
+
+<div style="max-width:640px; margin:0 auto;">
+  <div class="ad-slot"><!-- AdSense -->広告</div>
+</div>
+
+<div class="container">
+
+  <!-- 果物選択 -->
+  <div class="fruit-section">
+    <div class="fruit-section-title">▼ 果物を選んでください</div>
+    <div class="fruit-grid">
+      <div class="fruit-card" onclick="selectFruit('ume')" id="card-ume">
+        <span class="fruit-emoji">🫙</span>
+        <div class="fruit-name">梅</div>
+      </div>
+      <div class="fruit-card" onclick="selectFruit('anzu')" id="card-anzu">
+        <span class="fruit-emoji">🍑</span>
+        <div class="fruit-name">あんず</div>
+      </div>
+      <div class="fruit-card" onclick="selectFruit('lemon')" id="card-lemon">
+        <span class="fruit-emoji">🍋</span>
+        <div class="fruit-name">レモン</div>
+      </div>
+      <div class="fruit-card" onclick="selectFruit('ichigo')" id="card-ichigo">
+        <span class="fruit-emoji">🍓</span>
+        <div class="fruit-name">いちご</div>
+      </div>
+      <div class="fruit-card" onclick="selectFruit('ringo')" id="card-ringo">
+        <span class="fruit-emoji">🍎</span>
+        <div class="fruit-name">りんご</div>
+      </div>
+      <div class="fruit-card" onclick="selectFruit('momo')" id="card-momo">
+        <span class="fruit-emoji">🍑</span>
+        <div class="fruit-name">桃</div>
+      </div>
+      <div class="fruit-card" onclick="selectFruit('yuzu')" id="card-yuzu">
+        <span class="fruit-emoji">🍊</span>
+        <div class="fruit-name">ゆず</div>
+      </div>
+      <div class="fruit-card" onclick="selectFruit('kiwi')" id="card-kiwi">
+        <span class="fruit-emoji">🥝</span>
+        <div class="fruit-name">キウイ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 計算エリア（選択前） -->
+  <div id="prompt-area">
+    <div class="select-prompt">
+      <div class="select-prompt-emoji">☝️</div>
+      <p>上の果物をタップして<br>計算を始めてください</p>
+    </div>
+  </div>
+
+  <!-- 計算エリア（選択後） -->
+  <div id="calc-main" style="display:none;">
+
+    <div class="calc-area">
+      <div class="selected-fruit-header">
+        <div class="selected-fruit-emoji" id="sel-emoji">🫙</div>
+        <div class="selected-fruit-info">
+          <h2 id="sel-name">梅酒</h2>
+          <p id="sel-desc">定番の自家製果実酒</p>
+        </div>
+      </div>
+
+      <!-- 計算タブ -->
+      <div class="calc-tabs">
+        <button class="calc-tab active" onclick="switchCalcTab(0)">度数を計算</button>
+        <button class="calc-tab" onclick="switchCalcTab(1)">材料の目安</button>
+        <button class="calc-tab" onclick="switchCalcTab(2)">瓶のサイズ</button>
+      </div>
+
+      <!-- タブ1：度数計算 -->
+      <div class="calc-panel active" id="ctab0">
+        <div class="hint-box" id="hint0">梅・お酒・砂糖の量を入力すると出来上がりのアルコール度数がわかります。</div>
+
+        <div class="sec-label">使うお酒</div>
+        <div class="form-group">
+          <label>種類</label>
+          <select id="t1_sake_type" onchange="updateT1Degree()">
+            <option value="35">ホワイトリカー（35度）</option>
+            <option value="25">焼酎（25度）</option>
+            <option value="20">焼酎（20度）</option>
+            <option value="40">ウォッカ（40度）</option>
+            <option value="40">ブランデー（40度）</option>
+            <option value="custom">その他（度数を入力）</option>
+          </select>
+        </div>
+        <div class="form-group" id="t1_custom" style="display:none;">
+          <label>アルコール度数</label>
+          <div class="input-row">
+            <input type="number" id="t1_deg" placeholder="例：35" min="1" max="96">
+            <span class="unit">度</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>お酒の量</label>
+          <div class="input-row">
+            <input type="number" id="t1_sake_ml" placeholder="例：1800">
+            <span class="unit">ml</span>
+          </div>
+        </div>
+        <hr class="divider">
+        <div class="sec-label">果物と砂糖</div>
+        <div class="form-group">
+          <label>果物の量</label>
+          <div class="input-row">
+            <input type="number" id="t1_fruit_g" placeholder="例：1000">
+            <span class="unit">g</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>砂糖の量 <span class="label-sub">（0でも計算できます）</span></label>
+          <div class="input-row">
+            <input type="number" id="t1_sugar_g" placeholder="例：500" value="">
+            <span class="unit">g</span>
+          </div>
+        </div>
+
+        <button class="calc-btn" onclick="calcDegree()">🍶 度数を計算する</button>
+
+        <div class="result-box" id="t1_result">
+          <div class="result-title">出来上がりのアルコール度数（目安）</div>
+          <div class="result-big">
+            <span class="result-num" id="t1_alc">-</span>
+            <span class="result-unit-big">度</span>
+          </div>
+          <div class="result-cards">
+            <div class="result-card">
+              <div class="rc-label">出来上がり量</div>
+              <div class="rc-value" id="t1_total">-</div>
+              <div class="rc-unit">ml</div>
+            </div>
+            <div class="result-card">
+              <div class="rc-label">純アルコール量</div>
+              <div class="rc-value" id="t1_pure">-</div>
+              <div class="rc-unit">ml</div>
+            </div>
+          </div>
+          <div class="sweetness-wrap">
+            <div class="sw-label">甘さの目安</div>
+            <div class="sw-bar-bg">
+              <div class="sw-bar-fill" id="t1_sweet_bar" style="width:0%"></div>
+            </div>
+            <div class="sw-text" id="t1_sweet_text">-</div>
+          </div>
+          <div class="result-note">※果物の水分量・砂糖の溶解による体積変化を考慮した目安値です</div>
+        </div>
+      </div>
+
+      <!-- タブ2：材料の目安 -->
+      <div class="calc-panel" id="ctab1">
+        <div class="hint-box" id="hint1">果物の量と甘さの好みを入力するだけで、お酒・砂糖のおすすめ量が出ます。</div>
+
+        <div class="form-group">
+          <label>果物の量</label>
+          <div class="input-row">
+            <input type="number" id="t2_fruit" placeholder="例：1000">
+            <span class="unit">g</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>甘さの好み</label>
+          <select id="t2_sweet">
+            <option value="0.2">甘さ控えめ</option>
+            <option value="0.5" selected>標準</option>
+            <option value="0.8">甘め</option>
+            <option value="1.0">しっかり甘い</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>使うお酒</label>
+          <select id="t2_sake">
+            <option value="35">ホワイトリカー（35度）</option>
+            <option value="25">焼酎（25度）</option>
+            <option value="40">ブランデー（40度）</option>
+          </select>
+        </div>
+
+        <button class="calc-btn" onclick="calcIngredients()">🍋 材料の目安を出す</button>
+
+        <div class="result-box" id="t2_result">
+          <div class="result-title">おすすめの材料量</div>
+          <div class="result-cards">
+            <div class="result-card">
+              <div class="rc-label">果物</div>
+              <div class="rc-value" id="t2_fruit_out">-</div>
+              <div class="rc-unit">g</div>
+            </div>
+            <div class="result-card">
+              <div class="rc-label">お酒</div>
+              <div class="rc-value" id="t2_sake_out">-</div>
+              <div class="rc-unit">ml</div>
+            </div>
+            <div class="result-card">
+              <div class="rc-label">砂糖（氷砂糖）</div>
+              <div class="rc-value" id="t2_sugar_out">-</div>
+              <div class="rc-unit">g</div>
+            </div>
+            <div class="result-card">
+              <div class="rc-label">出来上がり度数</div>
+              <div class="rc-value" id="t2_alc_out">-</div>
+              <div class="rc-unit">度（目安）</div>
+            </div>
+          </div>
+          <div class="result-tip">💡 必要な瓶のサイズは「瓶のサイズ」タブで計算できます</div>
+        </div>
+      </div>
+
+      <!-- タブ3：瓶のサイズ -->
+      <div class="calc-panel" id="ctab2">
+        <div class="hint-box" id="hint2">材料の合計から、必要な保存瓶のサイズを計算します。</div>
+
+        <div class="form-group">
+          <label>果物の量</label>
+          <div class="input-row">
+            <input type="number" id="t3_fruit" placeholder="例：1000">
+            <span class="unit">g</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>お酒の量</label>
+          <div class="input-row">
+            <input type="number" id="t3_sake" placeholder="例：1800">
+            <span class="unit">ml</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>砂糖の量</label>
+          <div class="input-row">
+            <input type="number" id="t3_sugar" placeholder="例：500" value="0">
+            <span class="unit">g</span>
+          </div>
+        </div>
+
+        <button class="calc-btn" onclick="calcBottle()">🫙 瓶のサイズを計算する</button>
+
+        <div class="result-box" id="t3_result">
+          <div class="result-title">必要な保存瓶のサイズ</div>
+          <div class="result-big">
+            <span class="result-num" id="t3_bottle">-</span>
+            <span class="result-unit-big">L以上</span>
+          </div>
+          <div class="result-note" id="t3_note">-</div>
+          <div class="result-tip" id="t3_tip">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 果物ごとの情報 -->
+    <div class="fruit-info-card show" id="fruit-info">
+      <div class="fruit-info-title" id="info-title">梅酒について</div>
+      <div class="fruit-info-body" id="info-body">-</div>
+    </div>
+
+    <!-- 法律注記 -->
+    <div class="law-note">
+      ⚠️ <strong>酒税法について</strong><br>
+      自家製果実酒は<strong>アルコール度数20度以上</strong>のお酒を使用してください（日本酒・ワイン・ビールは使用禁止）。ぶどう・山ぶどうを原料とした果実酒は酒税法により禁止されています。自家醸造したものを販売することは違法です。
+    </div>
+  </div>
+
+</div>
+
+<div style="max-width:640px; margin:0 auto; padding:0 16px;">
+  <div class="ad-slot ad-slot-rectangle"><!-- AdSense -->広告</div>
+</div>
+
+<footer>
+  <p>果実酒計算ツール | 梅酒・あんず酒・レモン酒など自家製果実酒の計算</p>
+  <p style="margin-top:4px;">© 2026 果実酒計算ツール</p>
+</footer>
+
+<script>
+  // 果物データ
+  const FRUITS = {
+    ume:    { emoji:'🫙', name:'梅酒',    desc:'定番の自家製果実酒', water:0.88, sakeRatio:1.8, sugarBase:0.5,
+              info:'青梅は5月下旬〜6月が旬。傷のないものを選び、ヘタを爪楊枝で取り除いてから使います。漬けてから3ヶ月で飲み頃になりますが、1年以上おくと味がまろやかになります。' },
+    anzu:   { emoji:'🍑', name:'あんず酒', desc:'さわやかな酸味が特徴', water:0.85, sakeRatio:1.8, sugarBase:0.4,
+              info:'あんずは6月〜7月が旬。梅よりも甘みがあり、独特の香りが楽しめます。漬けてから2〜3ヶ月で飲み頃。種も一緒に漬けると風味が増します。' },
+    lemon:  { emoji:'🍋', name:'レモン酒', desc:'爽やかでお酒が進む', water:0.90, sakeRatio:1.5, sugarBase:0.8,
+              info:'輸入レモンは防腐剤がある場合が多いため、国産レモンや無農薬のものがおすすめです。皮ごと輪切りにして漬けます。1ヶ月程度で飲み頃になります。' },
+    ichigo: { emoji:'🍓', name:'いちご酒', desc:'きれいな赤色が美しい', water:0.90, sakeRatio:1.8, sugarBase:0.5,
+              info:'いちごは3月〜5月が旬。ヘタを取り洗ってしっかり水気を切ってから使います。2〜3週間でいちごの色と香りが移り、1ヶ月程度で飲み頃になります。' },
+    ringo:  { emoji:'🍎', name:'りんご酒', desc:'まろやかでやさしい甘み', water:0.85, sakeRatio:1.5, sugarBase:0.3,
+              info:'りんごは皮をむいて種を取り除き、薄切りにして漬けます。2〜3ヶ月で飲み頃になります。砂糖は少なめでりんご本来の甘みを活かすのがおすすめです。' },
+    momo:   { emoji:'🍑', name:'桃酒',    desc:'上品な香りと甘み', water:0.88, sakeRatio:1.8, sugarBase:0.4,
+              info:'桃は7月〜8月が旬。皮をむいて種を取り除いてから漬けます。柔らかくなってきたら桃の実を取り出すと濁りを防げます。1〜2ヶ月で飲み頃になります。' },
+    yuzu:   { emoji:'🍊', name:'ゆず酒',  desc:'冬に嬉しい香り豊かなお酒', water:0.88, sakeRatio:1.5, sugarBase:0.6,
+              info:'ゆずは11月〜12月が旬。皮を薄くむいて果汁ごと漬けます。種は苦みが出るので取り除くのがおすすめ。1〜2ヶ月で飲み頃になります。' },
+    kiwi:   { emoji:'🥝', name:'キウイ酒', desc:'南国の香りが楽しめる', water:0.84, sakeRatio:1.8, sugarBase:0.4,
+              info:'キウイは皮をむいて輪切りにして漬けます。熟したキウイより少し硬めのものが崩れにくくおすすめです。1〜2ヶ月で飲み頃になります。' },
+  };
+
+  let currentFruit = null;
+  let currentCalcTab = 0;
+
+  function selectFruit(key) {
+    // カード選択
+    document.querySelectorAll('.fruit-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('card-' + key).classList.add('selected');
+
+    currentFruit = FRUITS[key];
+
+    // ヘッダー更新
+    document.getElementById('sel-emoji').textContent = currentFruit.emoji;
+    document.getElementById('sel-name').textContent  = currentFruit.name;
+    document.getElementById('sel-desc').textContent  = currentFruit.desc;
+
+    // 果物情報
+    document.getElementById('info-title').textContent = currentFruit.name + 'について';
+    document.getElementById('info-body').textContent  = currentFruit.info;
+
+    // 表示切替
+    document.getElementById('prompt-area').style.display = 'none';
+    document.getElementById('calc-main').style.display   = 'block';
+
+    // 結果リセット
+    document.querySelectorAll('.result-box').forEach(r => r.classList.remove('show'));
+  }
+
+  function switchCalcTab(i) {
+    document.querySelectorAll('.calc-tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
+    document.querySelectorAll('.calc-panel').forEach((p, idx) => p.classList.toggle('active', idx === i));
+    currentCalcTab = i;
+  }
+
+  function updateT1Degree() {
+    const v = document.getElementById('t1_sake_type').value;
+    document.getElementById('t1_custom').style.display = v === 'custom' ? 'block' : 'none';
+  }
+
+  function getT1Degree() {
+    const v = document.getElementById('t1_sake_type').value;
+    return v === 'custom' ? parseFloat(document.getElementById('t1_deg').value) || 0 : parseFloat(v);
+  }
+
+  function round1(v) { return Math.round(v * 10) / 10; }
+
+  function calcDegree() {
+    const deg     = getT1Degree();
+    const sakeMl  = parseFloat(document.getElementById('t1_sake_ml').value);
+    const fruitG  = parseFloat(document.getElementById('t1_fruit_g').value);
+    const sugarG  = parseFloat(document.getElementById('t1_sugar_g').value) || 0;
+
+    if (!deg || !sakeMl || !fruitG) { alert('お酒の種類・量と果物の量を入力してください'); return; }
+
+    const waterRatio = currentFruit ? currentFruit.water : 0.88;
+    const fruitWater = fruitG * waterRatio * 0.6; // 水分の約60%が滲み出る
+    const sugarMl    = sugarG * 0.63;
+    const total      = sakeMl + fruitWater + sugarMl;
+    const pureAlc    = sakeMl * (deg / 100);
+    const finalDeg   = round1(pureAlc / total * 100);
+
+    const sugarPer1kg = (sugarG / fruitG) * 1000;
+    let sw = '', swPct = 0;
+    if (sugarPer1kg < 200)      { sw = '辛口'; swPct = 10; }
+    else if (sugarPer1kg < 350) { sw = '甘さ控えめ'; swPct = 30; }
+    else if (sugarPer1kg < 550) { sw = '標準'; swPct = 55; }
+    else if (sugarPer1kg < 750) { sw = '甘め'; swPct = 75; }
+    else                         { sw = 'しっかり甘い'; swPct = 95; }
+
+    document.getElementById('t1_alc').textContent       = finalDeg;
+    document.getElementById('t1_total').textContent     = Math.round(total);
+    document.getElementById('t1_pure').textContent      = Math.round(pureAlc);
+    document.getElementById('t1_sweet_bar').style.width = swPct + '%';
+    document.getElementById('t1_sweet_text').textContent = sw + '（果物1kgあたり砂糖' + Math.round(sugarPer1kg) + 'g）';
+    document.getElementById('t1_result').classList.add('show');
+  }
+
+  function calcIngredients() {
+    const fruitG  = parseFloat(document.getElementById('t2_fruit').value);
+    const sweet   = parseFloat(document.getElementById('t2_sweet').value);
+    const sakeDeg = parseFloat(document.getElementById('t2_sake').value);
+
+    if (!fruitG) { alert('果物の量を入力してください'); return; }
+
+    const ratio   = currentFruit ? currentFruit.sakeRatio : 1.8;
+    const sakeMl  = fruitG * ratio;
+    const sugarG  = fruitG * sweet;
+    const water   = currentFruit ? currentFruit.water : 0.88;
+    const total   = sakeMl + fruitG * water * 0.6 + sugarG * 0.63;
+    const alc     = round1((sakeMl * sakeDeg / 100) / total * 100);
+
+    document.getElementById('t2_fruit_out').textContent = Math.round(fruitG);
+    document.getElementById('t2_sake_out').textContent  = Math.round(sakeMl);
+    document.getElementById('t2_sugar_out').textContent = Math.round(sugarG);
+    document.getElementById('t2_alc_out').textContent   = alc;
+    document.getElementById('t2_result').classList.add('show');
+  }
+
+  function calcBottle() {
+    const fruitG  = parseFloat(document.getElementById('t3_fruit').value);
+    const sakeMl  = parseFloat(document.getElementById('t3_sake').value);
+    const sugarG  = parseFloat(document.getElementById('t3_sugar').value) || 0;
+
+    if (!fruitG || !sakeMl) { alert('果物の量とお酒の量を入力してください'); return; }
+
+    const water   = currentFruit ? currentFruit.water : 0.88;
+    const total   = sakeMl + fruitG * water * 0.6 + sugarG * 0.63;
+    const minL    = total * 1.5 / 1000;
+    const bottleL = Math.ceil(minL / 0.5) * 0.5;
+
+    let tip = '';
+    if      (bottleL <= 1.5) tip = '1.5L〜2Lの保存瓶がおすすめです';
+    else if (bottleL <= 3)   tip = '3Lの梅酒瓶がおすすめです。スーパーやホームセンターで入手できます';
+    else if (bottleL <= 4)   tip = '4Lの大型保存瓶がおすすめです';
+    else                      tip = bottleL + 'L以上の大型容器が必要です。ホームセンターで探してみてください';
+
+    document.getElementById('t3_bottle').textContent = bottleL.toFixed(1);
+    document.getElementById('t3_note').textContent   = `材料の合計量（目安）：約${Math.round(total)}ml`;
+    document.getElementById('t3_tip').textContent    = '💡 ' + tip;
+    document.getElementById('t3_result').classList.add('show');
+  }
+</script>
+</body>
+</html>
